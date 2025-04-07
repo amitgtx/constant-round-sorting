@@ -23,7 +23,7 @@ def AAV86_nodes(n, k, total_iter, supply_interval_lens, supply_pivots):
       segment_size = n  
       edges_consumed = int(n*(n-1)/2)
       edges_supplied = supply_interval_lens[total_iter - k]
-      print(f"[last iteration]\n graph consumed: clique of {n}\n graph supplied: clique of {supply_interval_lens[total_iter - k]}")
+      print(f"[last iteration]\n clique consumed: {n}\n clique supplied: {supply_interval_lens[total_iter - k]}")
       # print(f"[last iteration] edges consumed: {edges_consumed}, edges supplied: {edges_supplied}")
       return n 
 
@@ -44,8 +44,10 @@ def AAV86_nodes(n, k, total_iter, supply_interval_lens, supply_pivots):
 
     # biclique 
     edges_consumed = p * (n - p) 
+    if p > supply_pivots[total_iter - k]:
+        supply_pivots[total_iter - k] = p
     edges_supplied = supply_pivots[total_iter - k] * supply_interval_lens[total_iter - k]
-    print(f"[iteration {total_iter-k+1}]\n graph consumed: {p} * {n - p} \n graph supplied: {supply_pivots[total_iter - k]} * {supply_interval_lens[total_iter - k]}")
+    print(f"[iteration {total_iter-k+1}]: partition {segment_sizes}\n biclique consumed: {p} * {n - p} \n biclique supplied: {supply_pivots[total_iter - k]} * {supply_interval_lens[total_iter - k]}")
 
     # print(f"[iteration {total_iter-k+1}]\n edges consumed: {edges_consumed}, edges supplied: {edges_supplied}\n segment sizes: {segment_sizes}, p: {p}\n supply next lens: {supply_interval_lens[total_iter - k + 1]}, supply_pivots: {supply_pivots[total_iter - k]}")
 
@@ -55,10 +57,11 @@ def AAV86_nodes(n, k, total_iter, supply_interval_lens, supply_pivots):
         # predict the next iteration: 
         # if seg is larger than supply_iterval_lens[next iter], 
         # then multiply that by a constant (find it using seg) and pass the changed one into the next iteration
-        if seg > supply_interval_lens[total_iter - k + 1]:
-            const = ceil(seg / supply_interval_lens[total_iter - k + 1])
-            supply_interval_lens[total_iter - k + 1] *= const
-        nodes += AAV86_nodes(seg, k - 1, total_iter, supply_interval_lens, supply_pivots)
+        tmp_lens = supply_interval_lens
+        if seg > tmp_lens[total_iter - k + 1]:
+            const = ceil(seg / tmp_lens[total_iter - k + 1])
+            tmp_lens[total_iter - k + 1] *= const
+        nodes += AAV86_nodes(seg, k - 1, total_iter, tmp_lens, supply_pivots)
 
     return nodes
 
@@ -108,5 +111,4 @@ print("supply_pivots: ", supply_pivots)
 
 # run simulation
 AAV86_nodes(n=100, k=3, total_iter=3, supply_interval_lens=supply_interval_lens, supply_pivots=supply_pivots)
-
 
