@@ -4,13 +4,27 @@ from random import sample
 import numpy as np
 import statistics
 
+def compute_supply(n, total_iter):
+    supply_pivots = []
+    supply_interval_lens = []
+
+    for k in range(0, total_iter):
+        supply_interval_lens.append(n)
+        pivots = ceil(pow(n, 1 / (total_iter - k)))
+        supply_pivots.append(pivots)
+        n = int(n / pivots)  # update for next round
+
+    return supply_interval_lens, supply_pivots 
+
+
 def AAV86_nodes(n, k, total_iter, supply_interval_lens, supply_pivots):
     if(n <= 1): return 1
     if(k == 1): 
       segment_size = n  
       edges_consumed = int(n*(n-1)/2)
       edges_supplied = supply_interval_lens[total_iter - k]
-      print(f"[last iteration] edges consumed: {edges_consumed}, edges supplied: {edges_supplied}")
+      print(f"[last iteration]\n graph consumed: clique of {n}\n graph supplied: clique of {supply_interval_lens[total_iter - k]}")
+      # print(f"[last iteration] edges consumed: {edges_consumed}, edges supplied: {edges_supplied}")
       return n 
 
     p = ceil(pow(n, 1.0/k))
@@ -29,16 +43,21 @@ def AAV86_nodes(n, k, total_iter, supply_interval_lens, supply_pivots):
     segment_sizes.append(n - 1 - m[num_pivots - 1])
 
     # biclique 
-    # print("iteration ", total_iter - k + 1)
-    # print("segment sizes (nodes):", segment_sizes)
-   
     edges_consumed = p * (n - p) 
+    edges_supplied = supply_pivots[total_iter - k] * supply_interval_lens[total_iter - k]
+    print(f"[iteration {total_iter-k+1}]\n graph consumed: {p} * {n - p} \n graph supplied: {supply_pivots[total_iter - k]} * {supply_interval_lens[total_iter - k]}")
 
-    edges_supplied = supply_interval_lens[total_iter - k] * supply_pivots[total_iter - k]
+    # print(f"[iteration {total_iter-k+1}]\n edges consumed: {edges_consumed}, edges supplied: {edges_supplied}\n segment sizes: {segment_sizes}, p: {p}\n supply next lens: {supply_interval_lens[total_iter - k + 1]}, supply_pivots: {supply_pivots[total_iter - k]}")
 
-    print(f"[iteration {total_iter-k+1}]\n edges consumed: {edges_consumed}, edges supplied: {edges_supplied}\n segment sizes: {segment_sizes}, p: {p}\n supply next lens: {supply_interval_lens[total_iter - k + 1]}, supply_pivots: {supply_pivots[total_iter - k]}")
+    # we can compute the supply on the fly: if consume exceeds, then find the smallest integer multiplier for supply on the fly 
 
     for seg in segment_sizes:
+        # predict the next iteration: 
+        # if seg is larger than supply_iterval_lens[next iter], 
+        # then multiply that by a constant (find it using seg) and pass the changed one into the next iteration
+        if seg > supply_interval_lens[total_iter - k + 1]:
+            const = ceil(seg / supply_interval_lens[total_iter - k + 1])
+            supply_interval_lens[total_iter - k + 1] *= const
         nodes += AAV86_nodes(seg, k - 1, total_iter, supply_interval_lens, supply_pivots)
 
     return nodes
@@ -76,42 +95,18 @@ def AAV86_edges(n, k):
     return comp
 
 
-# estimate the waste ratio for 3-iteration AAV
-# first iteration: picking p pivots, pairwise compare, fixed graph, no need to simulate
-# second iteration: biclique, where left set is p pivots and right set is n-p elements, fixed graph, no need to simulate
-# third iteration: each partition consumes a clique. We need to know the estimated size
-
-
-
-# estimate the waste ratio for 4-iteration AAV
-
-
-
-# estimate the waste ratio for 5-iteration AAV
-
-
-def compute_supply(n, total_iter):
-    supply_pivots = []
-    supply_interval_lens = []
-
-    for k in range(0, total_iter):
-        supply_interval_lens.append(n)
-        pivots = ceil(pow(n, 1 / (total_iter - k)))
-        supply_pivots.append(pivots)
-        n = int(n / pivots)  # update for next round
-
-    return supply_interval_lens, supply_pivots 
-
-
-
+# number of elements 
 n = 100
+
+# number of iterations
 total_iter = 3
+
+# get supply, fixed before algorithm execution
 supply_interval_lens, supply_pivots = compute_supply(n=100, total_iter=3)
 print("supply_interval_lens: ", supply_interval_lens)
 print("supply_pivots: ", supply_pivots)
 
+# run simulation
 AAV86_nodes(n=100, k=3, total_iter=3, supply_interval_lens=supply_interval_lens, supply_pivots=supply_pivots)
 
-# pass in an array to AAV86_nodes function such that we know for iteration i 
-# which supply we use, instead of calculating that inside the function
 
